@@ -1,0 +1,55 @@
+Documento de Proyecto: Plataforma Inteligente de Abastecimiento para Restaurantes (B2B)
+1. Título del Proyecto
+AgroForecast: Optimizador de Compras y Pronóstico de Insumos para el Sector Gastronómico.
+
+2. Objetivo Principal
+Desarrollar una aplicación móvil B2B que centralice los precios mayoristas diarios de insumos agrícolas y entregue recomendaciones de compra (forecast) a dueños de restaurantes, permitiéndoles optimizar sus costos operativos y proteger sus márgenes de ganancia.
+
+3. Objetivos Secundarios
+Automatización de Datos: Construir un pipeline (ETL) que extraiga y limpie diariamente, y sin intervención manual, los boletines de precios de las principales centrales de abastos.
+
+Modelado Predictivo: Implementar modelos estadísticos que analicen el histórico de precios para identificar estacionalidad y proyectar tendencias a corto plazo.
+
+Interfaz Intuitiva: Proveer una experiencia de usuario (UX) simplificada mediante un "Semáforo de Compras" (Comprar, Mantener, Esperar) adaptado a las listas de ingredientes de cada restaurante.
+
+Monitoreo Interno: Construir tableros de control para auditar la calidad de los datos ingeridos y el rendimiento de la aplicación.
+
+4. Análisis del Problema
+El sector gastronómico en Colombia opera con márgenes de rentabilidad muy ajustados. Uno de los mayores riesgos para estos márgenes es la alta volatilidad en los precios de los alimentos, los cuales fluctúan por factores climáticos, problemas de orden público o ciclos de cosecha.
+Actualmente, los dueños de restaurantes toman decisiones de compra basadas en la intuición o al llegar a la plaza de mercado. Aunque existen datos oficiales, esta información se encuentra en formatos poco amigables (PDFs, Excels masivos) y carece de análisis predictivo, haciéndola ineficiente para el día a día de un administrador.
+
+5. Fuentes de Datos y Cobertura
+Para alimentar el modelo predictivo y mostrar los precios diarios con precisión, el sistema extraerá información estructurada y no estructurada de las siguientes fuentes primarias:
+
+Corabastos (Bogotá): Extracción del boletín diario oficial de precios al por mayor de la principal central de abastos del país, estableciendo el punto de referencia inicial.
+
+SIPSA (DANE): Consumo de los reportes diarios y semanales del Sistema de Información de Precios y Abastecimiento del Sector Agropecuario, lo que garantiza una base estadística nacional robusta.
+
+Datos Abiertos del Gobierno (datos.gov.co): Ingesta de datasets históricos provistos por el Ministerio de Agricultura, fundamentales para el entrenamiento inicial de los modelos de forecast.
+
+Centrales Regionales (Fase de expansión): Integración progresiva con los reportes de centrales en otras ciudades principales, como Cavasa (Cali), Central Mayorista (Medellín) y Granabastos (Barranquilla).
+
+6. La Solución
+Crear una herramienta tecnológica que actúe como un asesor de compras de bolsillo. La solución procesará los volúmenes de datos públicos y los traducirá en recomendaciones accionables. En lugar de mostrar una tabla infinita de números, la aplicación permitirá al usuario configurar su "canasta básica" y le indicará visualmente si el precio actual es óptimo para abastecerse o si la tendencia estadística sugiere esperar.
+
+7. Arquitectura y Herramientas de Desarrollo
+Para garantizar que el sistema sea escalable, mantenible y automatizado, el desarrollo se dividirá en las siguientes capas técnicas:
+
+A. Extracción y Orquestación de Datos (Data Engineering)
+Orquestador: n8n. Se encargará de programar las tareas automáticas diarias para visitar las fuentes oficiales y descargar los boletines matutinos.
+
+Procesamiento: Python. Scripts integrados en el flujo para leer los archivos, estructurar la información no tabular, estandarizar los nombres de los productos y limpiar los datos.
+
+B. Almacenamiento y Base de Datos
+Motor de Base de Datos: SQL Server. Ideal para manejar el histórico estructurado de precios con alta integridad referencial, permitiendo consultas rápidas y eficientes desde el backend.
+
+C. Inteligencia Artificial y Forecast (Data Science)
+Motor Predictivo: Python. Un proceso en segundo plano que consumirá el histórico de SQL Server, calculará las proyecciones semanales por producto y actualizará la base de datos con los resultados del "semáforo".
+
+D. Backend y Lógica de Negocio
+API REST: .NET 8. Construido bajo los principios de Clean Architecture para separar claramente las responsabilidades. Esta API será el puente seguro y rápido entre la base de datos y la aplicación móvil.
+
+E. Frontend y Monitoreo Interno
+App Móvil: Frameworks multiplataforma modernos para la interfaz del usuario.
+
+Monitoreo de Datos: Power BI. Conectado directamente a SQL Server mediante Power Query para crear dashboards internos que validen la ingesta diaria de datos y la precisión del modelo predictivo.

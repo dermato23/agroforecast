@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="AgroForecast.API/AgroForecast.API.csproj" />
+  <Project Path="AgroForecast.Application/AgroForecast.Application.csproj" />
+  <Project Path="AgroForecast.Domain/AgroForecast.Domain.csproj" />
+  <Project Path="AgroForecast.Infrastructure/AgroForecast.Infrastructure.csproj" />
+</Solution>

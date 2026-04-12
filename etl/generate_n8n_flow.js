@@ -1,0 +1,153 @@
+const fs = require('fs');
+
+const codeNodeJs = `
+const results = [];
+const pattern = /^(.*?)\\s+(KILO|BULTO|BULTOS|CANASTILLA|CAJA|ATADO|PAQUETE|BOLSA|LIBRA|LIBRAS|UNIDAD)\\s+(\\d+)\\s+(KILO|BULTO|BULTOS|CANASTILLA|CAJA|ATADO|PAQUETE|BOLSA|LIBRA|LIBRAS|UNIDAD)\\s+\\$([\\d,]+)\\s+\\$([\\d,]+)(?:\\s+\\$([\\d,]+))?\\s+(Estable|Subio|Bajo|Baja)/i;
+
+const text = $input.item.json.text || "";
+const lines = text.split('\\n');
+
+for (const line of lines) {
+  const match = line.trim().match(pattern);
+  if (match) {
+    try {
+      const p_extra = parseInt(match[5].replace(/,/g, ''), 10);
+      const p_primera = parseInt(match[6].replace(/,/g, ''), 10);
+      const p_unidad = match[7] ? parseInt(match[7].replace(/,/g, ''), 10) : 0;
+      
+      const cantidad = parseInt(match[3], 10);
+      const unidad = match[4].trim().toUpperCase();
+      
+      // Calcular precio estandarizado por KG para papa y tuberculos (Ej: Bulto 50kg)
+      let pricePerKg = p_primera; 
+      if (unidad === "BULTO" && cantidad === 50) {
+        pricePerKg = p_primera / 50.0;
+      }
+
+      results.push({
+        json: {
+          query: "INSERT INTO \\"Products\\" (\\"CategoryID\\", \\"StandardName\\", \\"BaseUnit\\") VALUES (1, $1, $2) ON CONFLICT (\\"StandardName\\") DO NOTHING;",
+          values: [match[1].trim(), "KG"],
+          original_name: match[1].trim(),
+          presentacion: match[2].trim(),
+          cantidad: cantidad,
+          unidad: unidad,
+          precio_extra: p_extra,
+          precio_primera: p_primera,
+          precio_unidad: p_unidad,
+          variacion: match[8].trim()
+        }
+      });
+    } catch(e) {}
+  }
+}
+
+return results;
+`;
+
+const workflow = {
+  "name": "AgroForecast Corabastos Scraper",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 5
+            }
+          ]
+        }
+      },
+      "id": "e0df1c50-0a7b-4d43-bb1f-8461876e9389",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [ 220, 300 ]
+    },
+    {
+      "parameters": {
+        "url": "https://corabastos.com.co/boletin-de-precios/",
+        "options": {}
+      },
+      "id": "3be293eb-59fb-43ac-9dc5-d014bc08d2ae",
+      "name": "Get Corabastos Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [ 440, 300 ]
+    },
+    {
+      "parameters": {
+        "extractionValues": {
+          "values": [
+            {
+              "key": "pdfLink",
+              "cssSelector": "a[href$='.pdf']",
+              "returnValue": "attribute",
+              "attribute": "href"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ac1c7eaa-de4f-4076-a2cb-c19ebfbfa488",
+      "name": "Extract PDF URL",
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1,
+      "position": [ 660, 300 ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.pdfLink }}",
+        "responseFormat": "file",
+        "options": {}
+      },
+      "id": "fc52b226-c2ba-4b72-bdf4-f58c704f08e4",
+      "name": "Download PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [ 880, 300 ]
+    },
+    {
+      "parameters": {},
+      "id": "90baabda-ed19-482a-a5f1-397c8b0933ec",
+      "name": "Read PDF",
+      "type": "n8n-nodes-base.readPDF",
+      "typeVersion": 1,
+      "position": [ 1100, 300 ]
+    },
+    {
+      "parameters": {
+        "jsCode": codeNodeJs
+      },
+      "id": "f5f7dc53-c90a-42c2-bebe-b2f7d3d19ebf",
+      "name": "Parse Products (Regex)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [ 1320, 300 ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [ [ { "node": "Get Corabastos Page", "type": "main", "index": 0 } ] ]
+    },
+    "Get Corabastos Page": {
+      "main": [ [ { "node": "Extract PDF URL", "type": "main", "index": 0 } ] ]
+    },
+    "Extract PDF URL": {
+      "main": [ [ { "node": "Download PDF", "type": "main", "index": 0 } ] ]
+    },
+    "Download PDF": {
+      "main": [ [ { "node": "Read PDF", "type": "main", "index": 0 } ] ]
+    },
+    "Read PDF": {
+      "main": [ [ { "node": "Parse Products (Regex)", "type": "main", "index": 0 } ] ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+};
+
+fs.writeFileSync('workflow_n8n.json', JSON.stringify(workflow, null, 2));
+console.log("JSON generated at workflow_n8n.json");

@@ -1,0 +1,19 @@
+﻿Iniciando cliente SOAP para SIPSA (DANE)...
+Cliente conectado exitosamente al WSDL.
+
+Operaciones disponibles:
+Servicio: SrvSipsaUpraBeanService
+  Puerto: SrvSipsaUpraPort
+    - Operaci¾n: consultarInsumosSipsaMesMadr
+    - Operaci¾n: promedioAbasSipsaMesMadr
+    - Operaci¾n: promediosSipsaCiudad
+    - Operaci¾n: promediosSipsaMesMadr
+    - Operaci¾n: promediosSipsaParcial
+    - Operaci¾n: promediosSipsaSemanaMadr
+
+Detalle de algunas operaciones clave:
+Firma para promediosSipsaCiudad:
+
+
+Firma para promediosSipsaMesMadr:
+

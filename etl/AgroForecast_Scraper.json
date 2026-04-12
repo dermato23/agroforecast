@@ -1,0 +1,180 @@
+{
+  "name": "AgroForecast: Scraper Diario Bogotá",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "e1cd04b3-0572-4a0b-99d7-567f6008b8b5",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://corabastos.com.co/boletin-de-precios/",
+        "options": {
+          "headers": {
+            "property": [
+              {
+                "name": "User-Agent",
+                "value": "Mozilla/5.0"
+              }
+            ]
+          }
+        }
+      },
+      "id": "bd053db1-5431-4876-b6ba-7a137bc389b7",
+      "name": "Obtener HTML Corabastos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const htmlStr = $input.first().json.data;\nconst match = htmlStr.match(/href=\"(https:\\/\\/[^\"]+?\\.pdf)\"/);\nif (!match) {\n  throw new Error(\"No PDF links found\");\n}\nreturn { pdfUrl: match[1] };"
+      },
+      "id": "2db131a2-e64e-4fbf-9430-804d9c7336f3",
+      "name": "Extraer Link PDF",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.pdfUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          },
+          "headers": {
+            "property": [
+              {
+                "name": "User-Agent",
+                "value": "Mozilla/5.0"
+              }
+            ]
+          }
+        }
+      },
+      "id": "ae111cc8-9aee-4c54-9467-b50a299bb3e3",
+      "name": "Descargar Boletin PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "operation": "pdf"
+      },
+      "id": "4693b137-02cc-4911-b0db-b8735df18e47",
+      "name": "Extraer Texto PDF",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.text;\nconst lines = text.split('\\n');\nconst pattern = /^(.*?)\\s+(KILO|BULTO|BULTOS|CANASTILLA|CAJA|ATADO|PAQUETE|BOLSA|LIBRA|LIBRAS|UNIDAD)\\s+(\\d+)\\s+(KILO|BULTO|BULTOS|CANASTILLA|CAJA|ATADO|PAQUETE|BOLSA|LIBRA|LIBRAS|UNIDAD)\\s+\\$([\\d,]+)\\s+\\$([\\d,]+)(?:\\s+\\$([\\d,]+))?\\s+(Estable|Subio|Bajo)/i;\n\nconst items = [];\nfor (const line of lines) {\n  const match = pattern.exec(line.trim());\n  if (match) {\n    items.push({\n      json: {\n        producto: match[1].trim(),\n        presentacion: match[2].trim(),\n        cantidad: parseInt(match[3]),\n        unidad: match[4].trim(),\n        precio_extra: parseInt(match[5].replace(/,/g, '')),\n        precio_primera: parseInt(match[6].replace(/,/g, '')),\n        precio_unidad: match[7] ? parseInt(match[7].replace(/,/g, '')) : 0,\n        variacion: match[8].trim(),\n        ciudad: \"Bogotá\"\n      }\n    });\n  }\n}\nreturn items;"
+      },
+      "id": "bd053db1-5431-1002-b6ba-7a137bfa0000",
+      "name": "Parsear Precios (RegEx)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO \"PriceLogs\" (\"ProductID\", \"MarketID\", \"SourceTypeID\", \"ReportDate\", \"MinPrice\", \"MaxPrice\", \"AvgPrice\", \"ReportedUnit\", \"StandardizedPricePerKg\", \"CreatedAt\")\nSELECT \n  P.\"ProductID\",\n  M.\"MarketID\",\n  2, \n  CURRENT_TIMESTAMP,\n  {{ $json.precio_primera }},\n  {{ $json.precio_extra }},\n  ({{ $json.precio_primera }} + {{ $json.precio_extra }}) / 2.0,\n  '{{ $json.unidad }}',\n  ({{ $json.precio_primera }} + {{ $json.precio_extra }}) / 2.0,\n  CURRENT_TIMESTAMP\nFROM \"Products\" P\nJOIN \"Markets\" M ON M.\"MarketName\" = 'Corabastos'\nWHERE P.\"StandardName\" = '{{ $json.producto }}';"
+      },
+      "id": "11111111-2222-3333-4444-555555555555",
+      "name": "Database PostgreSQL Insert",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.2,
+      "position": [1560, 300]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Obtener HTML Corabastos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener HTML Corabastos": {
+      "main": [
+        [
+          {
+            "node": "Extraer Link PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer Link PDF": {
+      "main": [
+        [
+          {
+            "node": "Descargar Boletin PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Descargar Boletin PDF": {
+      "main": [
+        [
+          {
+            "node": "Extraer Texto PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer Texto PDF": {
+      "main": [
+        [
+          {
+            "node": "Parsear Precios (RegEx)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear Precios (RegEx)": {
+      "main": [
+        [
+          {
+            "node": "Database PostgreSQL Insert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

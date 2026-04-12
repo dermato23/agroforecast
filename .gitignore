@@ -1,0 +1,50 @@
+# Flutter/Dart related
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+
+# Android related
+android/**/generated/
+android/app/src/main/res/generated/
+android/.gradle/
+**/android/Captures/
+*.apk
+*.aab
+*.aar
+
+# iOS related
+ios/Flutter/Generated.xcframework
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/flutter_settings.gsconfig
+ios/Runner/GeneratedPluginRegistrant.h
+ios/Runner/GeneratedPluginRegistrant.m
+
+# .NET / C# related
+bin/
+obj/
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+.vsconfig
+
+# Environment / Secret related (Optional, but recommended)
+.env
+*.p12
+*.jks
+*.keystore
+
+# Node / Javascript related
+node_modules/
+package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Git LFS
+*.lfs

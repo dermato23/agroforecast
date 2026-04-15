@@ -27,6 +27,10 @@ class _TrendsTabState extends State<TrendsTab> {
           _trendCategories = json.decode(res.body);
           _isLoading = false;
         });
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
       }
     } catch (_) {
       setState(() => _isLoading = false);

@@ -1,4 +1,4 @@
-package com.example.agroforecast_app
+package com.dermato23.agroforecast
 
 import io.flutter.embedding.android.FlutterActivity
 

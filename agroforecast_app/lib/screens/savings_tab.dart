@@ -30,6 +30,8 @@ class _SavingsTabState extends State<SavingsTab> {
           _totalSaved = (data['totalSaved'] as num).toDouble();
           _isLoading = false;
         });
+      } else {
+        setState(() => _isLoading = false);
       }
     } catch (_) {
       setState(() => _isLoading = false);

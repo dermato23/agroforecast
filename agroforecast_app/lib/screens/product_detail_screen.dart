@@ -69,23 +69,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   void _calculateLiveSemaforo() {
     if (_priceHistory.isEmpty) return;
 
-    // Siempre mostrar el precio actual, independiente del historial
     _currentPrice = (_priceHistory.last['averagePricePerKg'] as num).toDouble();
 
-    // Solo calcular recomendación si hay al menos 7 días de historial
-    if (_priceHistory.length < 7) {
-      _recommendation = "Acumulando datos";
-      _recommendationColor = Colors.blue.shade400;
-      _recommendationIcon = Icons.hourglass_bottom;
+    final historyLength = _priceHistory.length < 7 ? _priceHistory.length : 7;
+    
+    if (historyLength < 2) {
+      _recommendation = "MANTENER";
+      _recommendationColor = Colors.amber.shade700;
+      _recommendationIcon = Icons.trending_flat;
       return;
     }
 
-    final last7 = _priceHistory.sublist(_priceHistory.length - 7);
+    final lastDays = _priceHistory.sublist(_priceHistory.length - historyLength);
     double sum = 0;
-    for (var p in last7) {
+    for (var p in lastDays) {
       sum += (p['averagePricePerKg'] as num).toDouble();
     }
-    _sma7 = sum / 7;
+    _sma7 = sum / historyLength;
 
     if (_currentPrice > _sma7 + 50) {
       _recommendation = "ESPERAR";
@@ -210,8 +210,30 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _buildChart() {
+    if (_priceHistory.isEmpty) return const SizedBox.shrink();
+
+    double minY = double.infinity;
+    double maxY = 0;
+    for (var p in _priceHistory) {
+      double price = (p['averagePricePerKg'] as num).toDouble();
+      if (price < minY) minY = price;
+      if (price > maxY) maxY = price;
+    }
+    
+    if (minY == maxY) {
+      minY = minY - (minY * 0.1);
+      maxY = maxY + (maxY * 0.1);
+    } else {
+      double padding = (maxY - minY) * 0.2;
+      minY = minY - padding;
+      maxY = maxY + padding;
+    }
+    if (minY < 0) minY = 0;
+
     return LineChart(
       LineChartData(
+        minY: minY,
+        maxY: maxY,
         gridData: const FlGridData(show: false),
         titlesData: FlTitlesData(
           rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -231,7 +253,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             isCurved: true,
             color: Theme.of(context).colorScheme.primary,
             barWidth: 3,
-            dotData: const FlDotData(show: false),
+            dotData: const FlDotData(show: true),
             belowBarData: BarAreaData(show: true, color: Theme.of(context).colorScheme.primary.withOpacity(0.1)),
           ),
         ],

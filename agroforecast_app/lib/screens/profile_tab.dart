@@ -26,6 +26,8 @@ class _ProfileTabState extends State<ProfileTab> {
           _user = json.decode(res.body);
           _isLoading = false;
         });
+      } else {
+        setState(() => _isLoading = false);
       }
     } catch (_) {
       setState(() => _isLoading = false);
